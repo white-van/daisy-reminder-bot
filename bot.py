@@ -25,8 +25,6 @@ class CustomClient(discord.Client):
 
 
     async def on_message(self, message):
-        if message and message.content[0] != '*':
-            return 
 
         if message.content.startswith('*task'):
             await self._task(message)
@@ -34,7 +32,8 @@ class CustomClient(discord.Client):
         if message.content.startswith('*help'):
             await message.channel.send(self.help_msg)
         
-        if re.search(r'^\*knock|who\'?s there?', message.content) \
+        if message.content[0] == '*' and \
+            re.search(r'^\*knock|who\'?s there?', message.content) \
             or message.content.endswith('who?') \
             or message.content.endswith('who'):
             await self._joke(message)
