@@ -46,18 +46,10 @@ class CustomClient(discord.Client):
         if message.author == self.user:
             return 
 
-        if "orange" in message.content.lower():
-            await message.channel.send("orange did you get your vitamic C?")
+        for k in os.environ:
+            if k.startswith('name-') and k.split('-')[1] in message.content.lower():
+                await message.channel.send(os.getenv(k))
 
-        if "jerry" in message.content.lower():
-            await message.channel.send("Jerry is a fairy :man_fairy:")
-        
-        if "lettuce" in message.content.lower():
-            await message.channel.send("Oh, that vegetable... :leafy_green: ")
-        
-        if "blossom" in message.content.lower():
-            await message.channel.send("you mentioned blossom? she's a bully")
-        return 
 
 
     async def _joke(self, message):
