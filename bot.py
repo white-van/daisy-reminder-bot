@@ -40,21 +40,21 @@ class CustomClient(discord.Client):
             await self._joke(message)
         
         else:
-            await self._misc(message.content)
+            await self._misc(message)
 
 
     async def _misc(self, message):
 
-        if "orange" in message.lower():
+        if "orange" in message.content.lower():
             await message.channel.send("orange did you get your vitamic C?")
 
-        if "jerry" in message.lower():
+        if "jerry" in message.content.lower():
             await message.channel.send("Jerry is a fairy :man_fairy:")
         
-        if "lettuce" in message.lower():
+        if "lettuce" in message.content.lower():
             await message.channel.send("Oh, that vegetable... :leafy_green: ")
         
-        if "blossom" in message.lower():
+        if "blossom" in message.content.lower():
             await message.channel.send("you mentioned blossom? she's a bully")
         return 
 
