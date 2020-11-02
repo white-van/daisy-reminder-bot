@@ -15,6 +15,14 @@ client = discord.Client()
 with open('knock-knock.txt') as f:
     jokes = f.readlines()
 
+people_phrases = {}
+
+with open('people-phrases.env') as f:
+    for line in f:
+        line = line.split('=')
+        people_phrases[line[0]] = line[1].strip()
+
+print(people_phrases)
 
 class CustomClient(discord.Client):
     
@@ -46,9 +54,9 @@ class CustomClient(discord.Client):
         if message.author == self.user:
             return 
 
-        for k in os.environ:
-            if k.startswith('name-') and k.split('-')[1] in message.content.lower():
-                await message.channel.send(os.getenv(k))
+        for k in people_phrases:
+            if k in message.content.lower():
+                await message.channel.send(people_phrases[k])
 
 
 
