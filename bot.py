@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
 client = discord.Client()
 
 
@@ -16,11 +15,6 @@ client = discord.Client()
 class CustomClient(discord.Client):
     
     async def on_ready(self):
-        for guild in self.guilds:
-            if guild.name == GUILD:
-                break
-
-        self.client = guild
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="you :)"))
 
     async def on_message(self, message):
@@ -41,18 +35,19 @@ class CustomClient(discord.Client):
             await message.channel.send(help_msg)
 
     async def remind(self, message, task, mins):
-        if self.client.name == "UTM White Van":
-            channel = self.client.get_channel(760858471817150464)
+        server = message.channel.guild
+        if server.name == "UTM White Van":
+            channel = server.get_channel(760858471817150464)
 
-        elif self.client.name == "WV Girls":
-            channel = self.client.get_channel(758718542740455476)
+        elif server.name == "WV Girls":
+            channel = server.get_channel(758718542740455476)
 
         # personal    
         else: 
-            channel = self.client.get_channel(453417214591238166)
+            channel = server.get_channel(453417214591238166)
 
 
-        curr_message = await channel.fetch_message(message.id)
+        curr_message = message # await channel.fetch_message(message.id)
 
          # check if user completed task:
         if curr_message.reactions and curr_message.reactions[0].emoji == '✅':
