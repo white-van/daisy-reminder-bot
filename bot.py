@@ -25,7 +25,7 @@ class CustomClient(discord.Client):
 
 
     async def on_message(self, message):
-        if message.content[0] != '*':
+        if message and message.content[0] != '*':
             return 
 
         if message.content.startswith('*task'):
@@ -34,10 +34,30 @@ class CustomClient(discord.Client):
         if message.content.startswith('*help'):
             await message.channel.send(self.help_msg)
         
-        if re.search(r'^\*knock|who\'s there?', message.content) \
+        if re.search(r'^\*knock|who\'?s there?', message.content) \
             or message.content.endswith('who?') \
             or message.content.endswith('who'):
             await self._joke(message)
+        
+        else:
+            await self._misc(message.content)
+
+
+    async def _misc(self, message):
+
+        if "orange" in message.lower():
+            await message.channel.send("orange did you get your vitamic C?")
+
+        if "jerry" in message.lower():
+            await message.channel.send("Jerry is a fairy :man_fairy:")
+        
+        if "lettuce" in message.lower():
+            await message.channel.send("Oh, that vegetable... :leafy_green: ")
+        
+        if "blossom" in message.lower():
+            await message.channel.send("you mentioned blossom? she's a bully")
+        return 
+
 
     async def _joke(self, message):
 
