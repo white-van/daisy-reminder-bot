@@ -43,6 +43,8 @@ class CustomClient(discord.Client):
 
 
     async def _misc(self, message):
+        if message.author == self.user:
+            return 
 
         if "orange" in message.content.lower():
             await message.channel.send("orange did you get your vitamic C?")
