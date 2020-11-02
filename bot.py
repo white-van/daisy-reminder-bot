@@ -22,7 +22,6 @@ with open('people-phrases.env') as f:
         line = line.split('=')
         people_phrases[line[0]] = line[1].strip()
 
-print(people_phrases)
 
 class CustomClient(discord.Client):
     
@@ -55,7 +54,7 @@ class CustomClient(discord.Client):
             return 
 
         for k in people_phrases:
-            if k in message.content.lower():
+            if k in message.content.lower().split():
                 await message.channel.send(people_phrases[k])
 
 
@@ -75,8 +74,8 @@ class CustomClient(discord.Client):
             self.joke_state[message.author][0] = 2
             await message.channel.send(joke_pre)
         
-        elif message.content[1:].lower() == \
-            self.joke_state[message.author][1].lower() + " who?":
+        elif message.content[1:].lower().replace('?', '') == \
+            self.joke_state[message.author][1].lower() + " who":
             joke_end = self.joke_state[message.author][2]
             self.joke_state[message.author][0] = 0
             await message.channel.send(joke_end)
