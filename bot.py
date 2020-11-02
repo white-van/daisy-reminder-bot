@@ -41,11 +41,23 @@ class CustomClient(discord.Client):
             await message.channel.send(help_msg)
 
     async def remind(self, message, task, mins):
-        # check if user completed task:
-        channel = self.client.get_channel(453417214591238166)
+        if self.client.name == "UTM White Van":
+            channel = self.client.get_channel(760858471817150464)
+
+        elif self.client.name == "WV Girls":
+            channel = self.client.get_channel(758718542740455476)
+
+        # personal    
+        else: 
+            channel = self.client.get_channel(453417214591238166)
+
+
         curr_message = await channel.fetch_message(message.id)
+
+         # check if user completed task:
         if curr_message.reactions and curr_message.reactions[0].emoji == '✅':
             await channel.send("Good job on completing the task, {}!".format(message.author.mention))
+        # user didn't complete task
         else:
             await channel.send("Hey {}, it's been {} minutes. Did you make progress on {}?".format(message.author.mention, mins, task))
 
