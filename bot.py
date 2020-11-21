@@ -6,7 +6,10 @@ import asyncio
 from dotenv import load_dotenv
 import random
 import re
+from MLP_classifier import NLPSpamDetector
 
+a = NLPSpamDetector()
+a.train_test()
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -32,6 +35,10 @@ class CustomClient(discord.Client):
 
 
     async def on_message(self, message):
+        
+        is_troll = a.predict("This is a user")
+        if is_troll == "spam":
+            await self._is_spam(message)
 
         if message.content.startswith('*task'):
             await self._task(message)
@@ -48,6 +55,8 @@ class CustomClient(discord.Client):
         else:
             await self._misc(message)
 
+    async def _is_spam(self, message):
+        await message.channel.send("DO NOT TROLL")
 
     async def _misc(self, message):
         if message.author == self.user:
