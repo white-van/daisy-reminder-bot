@@ -12,11 +12,13 @@ class NLPSpamDetector:
 
     def train_test(self):
         df = pd.read_csv('spam.csv', sep=',', encoding='latin-1')
-        stop_words = set(stopwords.words('english'))
+        self.stop_words = set(stopwords.words('english'))
         self.processed_text = []
         self.target = []
         for i in df.itertuples():
-            self.processed_text.append(i[2])
+            text = i[2].strip().split(' ')
+            text_processed = ' '.join([i for i in text if i not in self.stop_words])
+            self.processed_text.append(text_processed)
             self.target.append(i[1])
         self.tf = TfidfVectorizer()
         t = self.tf.fit_transform(self.processed_text)
@@ -27,6 +29,8 @@ class NLPSpamDetector:
         print(self.model.score(x_test, y_test))
 
     def predict(self, text):
+        pre_process = text[2].strip().split(' ')
+        text_processed = ' '.join([i for i in pre_process if i not in self.stop_words])
         self.processed_text.append(text)
         t = self.tf.fit_transform(self.processed_text)
         a = self.model.predict(t)
@@ -35,5 +39,5 @@ class NLPSpamDetector:
 if __name__=='__main__':
     a = NLPSpamDetector()
     a.train_test()
-    a.predict("This is a user")
+    a.predict("Hi this is interesting")
 
