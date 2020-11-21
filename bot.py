@@ -35,10 +35,12 @@ class CustomClient(discord.Client):
 
 
     async def on_message(self, message):
-        
-        is_troll = a.predict(message)
-        if is_troll == "spam":
-            await self._is_spam(message)
+        try: 
+            is_troll = a.predict(message)
+            if is_troll == "spam":
+                await self._is_spam(message)
+        except Exception:
+            pass 
 
         if message.content.startswith('*task'):
             await self._task(message)
