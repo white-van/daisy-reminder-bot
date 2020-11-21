@@ -36,7 +36,7 @@ class CustomClient(discord.Client):
 
     async def on_message(self, message):
         
-        is_troll = a.predict("This is a user")
+        is_troll = a.predict(message)
         if is_troll == "spam":
             await self._is_spam(message)
 
