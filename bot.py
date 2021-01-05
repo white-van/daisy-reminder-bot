@@ -69,6 +69,9 @@ class CustomClient(discord.Client):
         
         if message.content.startswith("*help"):
             await self._help(message)
+        
+        if message.content.startswith("*clean"):
+            await self._delete_messages(message)
 
         if message.content.startswith('*task'):
             await self._task(message)
@@ -95,6 +98,12 @@ class CustomClient(discord.Client):
         )
         await message.channel.send(embed=embed)
 
+    async def _delete_messages(self, message):
+        def is_me(m):
+            return m.author == self.user
+        deleted = await message.channel.purge(limit=20, check=is_me)
+        await message.channel.send('Deleted {} message(s)'.format(len(deleted)), delete_after=3)
+        await message.delete(delay=3)
 
     async def _misc(self, message):
         if message.author == self.user:
