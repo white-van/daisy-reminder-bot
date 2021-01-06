@@ -8,11 +8,19 @@ import random
 import aiocron
 import re
 
+### For Dialogflow ### 
+import dialogflow
+from google.api_core.exceptions import InvalidArgument
+
 
 load_dotenv()
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = 'private.json'
 TOKEN = os.getenv('DISCORD_TOKEN')
-client = discord.Client()
+DIALOGFLOW_PROJECT_ID = os.getenv('DIALOGFLOW_PROJECT_ID')
+DIALOGFLOW_LANGUAGE_CODE = os.getenv('DIALOGFLOW_LANGUAGE_CODE')
+SESSION_ID = os.getenv('SESSION_ID')
 
+client = discord.Client()
 with open('knock-knock.txt') as f:
     jokes = f.readlines()
 
@@ -76,9 +84,8 @@ class CustomClient(discord.Client):
         if message.content.startswith('*task'):
             await self._task(message)
         
-        if message.content.startswith('*message me'):
-            user = self.get_user(414980016435232778)
-            await user.send("Hi")
+        if message.content.startswith('*talk'):
+            await self._dialog_response(message)
         
         if message.content and message.content[0] == '*' and \
             re.search(r'^\*knock|who.?s there\??', message.content) \
@@ -88,6 +95,21 @@ class CustomClient(discord.Client):
 
         else:
             await self._misc(message)
+
+    async def _dialog_response(self, message):
+        text_to_be_analyzed = message.content
+        session_client = dialogflow.SessionsClient()
+        session = session_client.session_path(DIALOGFLOW_PROJECT_ID, SESSION_ID)
+        text_input = dialogflow.types.TextInput(text=text_to_be_analyzed, language_code=DIALOGFLOW_LANGUAGE_CODE)
+        query_input = dialogflow.types.QueryInput(text=text_input)
+        try:
+            response = session_client.detect_intent(session=session, query_input=query_input)
+        except InvalidArgument:
+            print("intent error")
+            return
+        response_text = response.query_result.fulfillment_text
+        if response_text:
+            await message.channel.send(response_text)
 
     async def _help(self, message):
         embed = discord.Embed(

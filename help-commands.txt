@@ -16,3 +16,6 @@ say `*who's there`?. Then when I tell you the <name>, respond with `*<name> who?
 
 
 3) **Clean**: Ah.... I tidy up my own mess too... Just ask me to `*clean` and I'll clean up to 30 of my messages up
+
+4) **Talk**: Use `*talk` to talk to me. I'm still being trained to talk well, but I can have some small talk, 
+and tell you jokes
