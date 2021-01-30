@@ -74,26 +74,27 @@ class CustomClient(discord.Client):
                         return
                 await partner.send(message.content)
                 await message.add_reaction("<:pandaLove:649484391801815050>")
-        
-        if message.channel.id == 515333729812742155:
+
+        elif message.channel.id == 515333729812742155:
             await message.add_reaction("<:pandaLove:649484391801815050>")
+            
         
-        if message.author.bot:
+        elif message.author.bot:
             return 
         
-        if message.content.startswith("*help"):
+        elif message.content.startswith("*help"):
             await self._help(message)
         
-        if message.content.startswith("*clean"):
+        elif message.content.startswith("*clean"):
             await self._delete_messages(message)
 
-        if message.content.startswith('*task'):
+        elif message.content.startswith('*task'):
             await self._task(message)
         
-        if message.content.startswith('*talk'):
+        elif message.content.startswith('*talk'):
             await self._dialog_response(message)
         
-        if message.content and message.content[0] == '*' and \
+        elif message.content and message.content[0] == '*' and \
             re.search(r'^\*knock|who.?s there\??', message.content) \
             or message.content.endswith('who?') \
             or message.content.endswith('who'):
