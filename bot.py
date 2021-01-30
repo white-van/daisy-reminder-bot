@@ -2,6 +2,7 @@ import os
 import threading
 import time
 import discord
+import math
 import asyncio
 from dotenv import load_dotenv
 import random
@@ -19,6 +20,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 DIALOGFLOW_PROJECT_ID = os.getenv('DIALOGFLOW_PROJECT_ID')
 DIALOGFLOW_LANGUAGE_CODE = os.getenv('DIALOGFLOW_LANGUAGE_CODE')
 SESSION_ID = os.getenv('SESSION_ID')
+PRIME_NUMBER_CAP = os.getenv('PRIME_NUMBER_CAP')
 
 client = discord.Client()
 with open('knock-knock.txt') as f:
@@ -43,6 +45,10 @@ with open('people-phrases.env') as f:
 
 cooldown = 3
 
+def is_prime(n):
+    if (n % 2 == 0 and n > 2) or n > int(PRIME_NUMBER_CAP): 
+        return False
+    return all(n % i for i in range(3, int(math.sqrt(n)) + 1, 2))
 class CustomClient(discord.Client):
     
     async def on_ready(self):
@@ -137,6 +143,15 @@ class CustomClient(discord.Client):
                 if not people_phrases[k][1]: 
                     await message.channel.send(people_phrases[k][0])
                 people_phrases[k][1] = (people_phrases[k][1] + 1) % cooldown
+        
+        #check if text has prime
+        potential_primes = re.findall(r"\d+", message.content)
+        if (len(potential_primes) != 0 and any(is_prime(int(potential_primes)) for potential_prime in potential_primes)):
+            await message.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER P}")
+            await message.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER R}")
+            await message.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER I}")
+            await message.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER M}")
+            await message.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER E}")
 
 
 
