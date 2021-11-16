@@ -9,7 +9,7 @@ import random
 import aiocron
 import re
 
-### For Dialogflow ### 
+### For Dialogflow ###
 import dialogflow
 from google.api_core.exceptions import InvalidArgument
 
@@ -35,7 +35,7 @@ with open('pairs.txt') as f:
         line = line.split(', ')
         pairs[int(line[0])] = int(line[1])
         pairs[int(line[1])] = int(line[0])
-        
+
 people_phrases = {}
 
 with open('people-phrases.env') as f:
@@ -46,11 +46,11 @@ with open('people-phrases.env') as f:
 cooldown = 3
 
 def is_prime(n):
-    if (n % 2 == 0 and n > 2) or n > int(PRIME_NUMBER_CAP): 
+    if (n % 2 == 0 and n > 2) or n > int(PRIME_NUMBER_CAP):
         return False
     return all(n % i for i in range(3, int(math.sqrt(n)) + 1, 2))
 class CustomClient(discord.Client):
-    
+
     async def on_ready(self):
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="you :)"))
         self.help_msg = "Send a message with `*task minutes {task-name}` to set a timer"
@@ -77,27 +77,27 @@ class CustomClient(discord.Client):
 
         elif message.channel.id == 515333729812742155:
             await message.add_reaction("<:pandaLove:649484391801815050>")
-            
-        
+
+
         elif message.author.bot:
-            return 
-        
+            return
+
         elif message.content.startswith("*help"):
             await self._help(message)
-        
+
         elif message.content.startswith("*clean"):
             await self._delete_messages(message)
 
         elif message.content.startswith('*task'):
             await self._task(message)
-        
+
         elif message.content.startswith('*talk'):
             await self._dialog_response(message)
-        
+
         elif message.content and message.content[0] == '*' and \
-            re.search(r'^\*knock|who.?s there\??', message.content) \
-            or message.content.endswith('who?') \
-            or message.content.endswith('who'):
+                re.search(r'^\*knock|who.?s there\??', message.content) \
+                or message.content.endswith('who?') \
+                or message.content.endswith('who'):
             await self._joke(message)
 
         else:
@@ -136,15 +136,15 @@ class CustomClient(discord.Client):
 
     async def _misc(self, message):
         if message.author == self.user:
-            return 
+            return
 
         for k in people_phrases:
             if k in message.content.lower().split():
                 # hasn't been mentioned since cooldown period
-                if not people_phrases[k][1]: 
+                if not people_phrases[k][1]:
                     await message.channel.send(people_phrases[k][0])
                 people_phrases[k][1] = (people_phrases[k][1] + 1) % cooldown
-        
+
         #check if text has prime
         potential_primes = re.findall(r"\d+", message.content)
         if (len(potential_primes) != 0 and any(is_prime(int(potential_primes)) for potential_prime in potential_primes)):
@@ -160,7 +160,7 @@ class CustomClient(discord.Client):
 
         # knock knock
         if message.content.startswith("*knock") or \
-            self.joke_state.get(message.author, [0])[0] == 0:
+                self.joke_state.get(message.author, [0])[0] == 0:
             joke = random.choice(jokes).split(' | ')
             self.joke_state[message.author] = [1] + joke
             await message.channel.send("Knock knock")
@@ -170,13 +170,13 @@ class CustomClient(discord.Client):
             joke_pre = self.joke_state[message.author][1]
             self.joke_state[message.author][0] = 2
             await message.channel.send(joke_pre)
-        
+
         elif message.content[1:].lower().replace('?', '') == \
-            self.joke_state[message.author][1].lower() + " who":
+                self.joke_state[message.author][1].lower() + " who":
             joke_end = self.joke_state[message.author][2]
             self.joke_state[message.author][0] = 0
             await message.channel.send(joke_end)
-        
+
         elif self.joke_state.get(message.author, [0])[0] == 2:
             joke_pre = self.joke_state[message.author][1]
             msg = 'You\'re supposed to ask `{} who?`'.format(joke_pre)
@@ -184,25 +184,43 @@ class CustomClient(discord.Client):
         else:
             msg = "hmm, can you start over with `*knock`? I forgot the joke... oopsie daisy"
             await message.channel.send(msg)
-    
+
+    def _incorrectly_formatted_time(self, time):
+        return not (re.search("^\d+h([0-5]\d|\d)min$", time.replace(".", "")) or time.replace(".", "").isdecimal())
+
     async def _task(self, message):
         msg = message.content.split()
-        if len(msg) < 3 or not msg[1].replace(".", "").isdecimal():
+        using_hrs_format = None
+        if len(msg) < 3 or self._incorrectly_formatted_time(msg[1]):
             await message.channel.send(self.help_msg)
-        else: 
-            response = "Ok, {}! I will check on you in {} minutes :)".format(message.author.mention, msg[1])
+        else:
+            response = ""
+            seconds = None;
+            hours = "0"
+            mins = ""
+            if msg[1].replace(".", "").isdecimal():
+                response = "Ok, {}! I will check on you in {} minutes :)".format(message.author.mention, msg[1])
+                mins = msg[1]
+                self._using_hrs_format = False
+            else:
+                hours = msg[1][:msg[1].find("h")]
+                mins = msg[1][msg[1].find("h") +  1:msg[1].find("min")]
+                response = "Ok, {}! I will check on you in {} {} and {} {} :)".format(message.author.mention, hours[:-1].lstrip("0") + hours[-1], "hour" if hours == "1" else "hours", mins[:-1].lstrip("0") + mins[-1], "minute" if mins == "1" else "minutes")
+                using_hrs_format = True
+            seconds = (float(hours) * 60 + float(mins)) * 60
             await message.channel.send(response)
-            seconds = float(msg[1]) * 60
             await asyncio.sleep(seconds)
-            await self.remind(message, ' '.join(msg[2:]), msg[1])
+            await self.remind(message, ' '.join(msg[2:]), hours, mins, using_hrs_format)
 
-    async def remind(self, message, task, mins):
-         # check if user completed task:
+    async def remind(self, message, task, hours, mins, using_hrs_format):
+        # check if user completed task:
         if message.reactions and message.reactions[0].emoji == '✅':
             await message.channel.send("Good job on completing the task, {}!".format(message.author))
         # user didn't complete task
         elif message.reactions and message.reactions[0].emoji == '❎':
             return
+        elif using_hrs_format:
+            await message.channel.send("Hey {}, it's been {} {} and {} {}. Did you make progress on {}?".format(message.author.mention, hours[:-1].lstrip("0") + hours[-1], "hour" if hours == "1" else "hours", mins[:-1].lstrip("0") + mins[-1], "minute" if mins == "1" else "minutes", task))
         else:
             await message.channel.send("Hey {}, it's been {} minutes. Did you make progress on {}?".format(message.author.mention, mins, task))
 
@@ -213,7 +231,7 @@ class CustomClient(discord.Client):
         user_messages = {}
         async for message in channel.history(limit=100000):
             user_messages.setdefault(message.author.mention, []).append(message.content)
-        
+
         with open('messages.txt', 'w') as f:
             for k, v in user_messages.items():
                 f.write('{}: {}\n\n\n'.format(k, '\n'.join(v)))
@@ -225,3 +243,4 @@ client = CustomClient()
 async def get_messages():
     await client.get_messages() """
 client.run(TOKEN)
+
