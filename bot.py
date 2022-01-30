@@ -52,7 +52,11 @@ if ANON_COMPLIMENT:
         for line in f:
             line = line.split(',')
             people[line[0]] = line[1]
-        
+    
+    with open('banned_names.txt') as f:
+        banned = []
+        for line in f:
+            banned.append(line.strip())
 people_phrases = {}
 
 with open('people-phrases.env') as f:
@@ -82,6 +86,9 @@ class CustomClient(discord.Client):
 
     async def on_message(self, message):
 
+        if message.author.bot:
+            return 
+
         if isinstance(message.channel, discord.channel.DMChannel):
             if PEN_PALS:
                 partner_id = pairs.get(message.author.id, None)
@@ -96,24 +103,10 @@ class CustomClient(discord.Client):
                     await message.add_reaction("<:pandaLove:649484391801815050>")
             
             elif ANON_COMPLIMENT:
-                message_lst = message.content.split(' ')
-                if len(message_lst) <= 1:
+                if message.content.startswith('!reply'):
+                    await self._send_comp_reply(message)
                     return
-                person = message_lst[0]
-                person_id = people.get(person, None)
-                if partner_id:
-                    partner = self.get_user(partner_id)
-                    if not partner:
-                        try:
-                            partner = await self.fetch_user(partner_id)
-                        except:
-                            return
-                    await partner.send(' '.join(message_lst[1:]))
-                    await message.add_reaction("<:pandaLove:649484391801815050>")
-                else:
-                    message.author.send(f'Sending the message failed. Either user {person} did not ' + 
-                                        f'consent to get messages, or your message is formatted incorrectly.'+
-                                        ' Please use `<user_id> <message>` as your formatting.')
+                await self._send_compliment(message)
 
 
             
@@ -121,9 +114,6 @@ class CustomClient(discord.Client):
         elif message.channel.id == 515333729812742155:
             await message.add_reaction("<:pandaLove:649484391801815050>")
             
-        
-        elif message.author.bot:
-            return 
         
         elif message.content.startswith("*help"):
             await self._help(message)
@@ -146,6 +136,65 @@ class CustomClient(discord.Client):
         else:
             await self._misc(message)
 
+    async def _send_comp_reply(self, message):
+        if str(message.author.id) in banned:
+            await message.channel.send('You\'ve been banned from using this service.')
+            return
+            
+        # find last person who messaged this person
+        user_id = message.author.id
+        content = ' '.join(message.content.split(' ')[1:])
+        reply_id = None
+        with open('comp_log.txt') as f:
+            for line in f:
+                line = line.strip().split(',')
+                if int(line[0]) == user_id:
+                    reply_id = int(line[1])
+        if reply_id is None:
+            await message.channel.send('Sorry, I couldn\'t find who sent the message to you.')
+        else:
+            person = self.get_user(reply_id)
+            if not person:
+                try:
+                    person = await self.fetch_user(reply_id)
+                except:
+                    print(f'Couldn\'t find {person}')
+                    return
+            await person.send(content)
+            await message.add_reaction("<:pandaLove:649484391801815050>")
+        
+
+    async def _send_compliment(self, message):
+        if str(message.author.id) in banned:
+            await message.channel.send('You\'ve been banned from using this service.')
+            return
+
+        message_lst = message.content.split(' ')
+        if len(message_lst) <= 1:
+            print(f'Unable to send message')
+            return
+        person = message_lst[0]
+        person_id = people.get(person, None)
+        if person_id:
+            partner = self.get_user(person_id)
+            if not partner:
+                try:
+                    partner = await self.fetch_user(person_id)
+                except:
+                    print(f'Couldn\'t find {person}')
+                    return
+            await partner.send(' '.join(message_lst[1:]))
+            await message.add_reaction("<:pandaLove:649484391801815050>")
+            with open('comp_log.txt', 'a') as f:
+                f.write(f'{partner.id},{message.author.id}\n')
+
+
+
+        else:
+            await message.channel.send(f'Sending the message failed. Either user {person} did not ' + 
+                                f'consent to get messages, or your message is formatted incorrectly.'+
+                                ' Please use `<user_id> <message>` as your formatting.')
+    
     async def _dialog_response(self, message):
         text_to_be_analyzed = message.content
         session_client = dialogflow.SessionsClient()
