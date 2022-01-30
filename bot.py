@@ -103,6 +103,9 @@ class CustomClient(discord.Client):
                     await message.add_reaction("<:pandaLove:649484391801815050>")
             
             elif ANON_COMPLIMENT:
+                if message.content.startswith('!add') and message.author.id == 414980016435232778:
+                    await self._add_user(message)
+                    return
                 if message.content.startswith('!ban') and message.author.id == 414980016435232778:
                     await self._ban_user(message)
                     return
@@ -139,7 +142,15 @@ class CustomClient(discord.Client):
         else:
             await self._misc(message)
 
-    
+    async def _add_user(self, message):
+        user = message.content.replace('!add', '').strip()
+        name, user_id = user.split(',')
+        people[name] = user_id
+        with open('names.txt', 'a') as f:
+            f.write(f'{name},{user_id}\n')
+            await message.channel.send('Added, Blossom.')    
+
+
     async def _ban_user(self, message):
         user = message.content.replace('!ban', '').strip()
         banned.append(user)
@@ -204,7 +215,8 @@ class CustomClient(discord.Client):
         else:
             await message.channel.send(f'Sending the message failed. Either user {person} did not ' + 
                                 f'consent to get messages, or your message is formatted incorrectly.'+
-                                ' Please use `<user_id> <message>` as your formatting.')
+                                ' Please use `<user_id> <message>` as your formatting.\n\n' +
+                                'To reply to the last DM use `!reply <message>`.')
     
     async def _dialog_response(self, message):
         text_to_be_analyzed = message.content
