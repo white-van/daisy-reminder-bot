@@ -14,6 +14,10 @@ import dialogflow
 from google.api_core.exceptions import InvalidArgument
 
 
+
+PEN_PALS = False
+ANON_COMPLIMENT = True
+
 load_dotenv()
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = 'private.json'
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -29,12 +33,25 @@ with open('knock-knock.txt') as f:
 with open('help-commands.txt') as f:
     help_command = f.read()
 
-with open('pairs.txt') as f:
-    pairs = {}
-    for line in f:
-        line = line.split(', ')
-        pairs[int(line[0])] = int(line[1])
-        pairs[int(line[1])] = int(line[0])
+if PEN_PALS:
+    with open('pairs.txt') as f:
+        pairs = {}
+        for line in f:
+            line = line.split(',')[:2]
+            line = [int(x) for x in line]
+            if(len(line) > 4):
+                for i in range(3):
+                    pairs[int(line[i])] = line[:i] + line[i + 1:4]
+            else:
+                pairs[line[0]] = line[1]
+                pairs[line[1]] = line[0]
+
+if ANON_COMPLIMENT:
+    with open('names.txt') as f:
+        people = {}
+        for line in f:
+            line = line.split(',')
+            people[line[0]] = line[1]
         
 people_phrases = {}
 
@@ -46,9 +63,11 @@ with open('people-phrases.env') as f:
 cooldown = 3
 
 def is_prime(n):
+    return False
     if (n % 2 == 0 and n > 2) or n > int(PRIME_NUMBER_CAP): 
         return False
     return all(n % i for i in range(3, int(math.sqrt(n)) + 1, 2))
+
 class CustomClient(discord.Client):
     
     async def on_ready(self):
@@ -64,16 +83,40 @@ class CustomClient(discord.Client):
     async def on_message(self, message):
 
         if isinstance(message.channel, discord.channel.DMChannel):
-            partner_id = pairs.get(message.author.id, None)
-            if partner_id:
-                partner = self.get_user(partner_id)
-                if not partner:
-                    try:
-                        partner = await self.fetch_user(partner_id)
-                    except:
-                        return
-                await partner.send(message.content)
-                await message.add_reaction("<:pandaLove:649484391801815050>")
+            if PEN_PALS:
+                partner_id = pairs.get(message.author.id, None)
+                if partner_id:
+                    partner = self.get_user(partner_id)
+                    if not partner:
+                        try:
+                            partner = await self.fetch_user(partner_id)
+                        except:
+                            return
+                    await partner.send(message.content)
+                    await message.add_reaction("<:pandaLove:649484391801815050>")
+            
+            elif ANON_COMPLIMENT:
+                message_lst = message.content.split(' ')
+                if len(message_lst) <= 1:
+                    return
+                person = message_lst[0]
+                person_id = people.get(person, None)
+                if partner_id:
+                    partner = self.get_user(partner_id)
+                    if not partner:
+                        try:
+                            partner = await self.fetch_user(partner_id)
+                        except:
+                            return
+                    await partner.send(' '.join(message_lst[1:]))
+                    await message.add_reaction("<:pandaLove:649484391801815050>")
+                else:
+                    message.author.send(f'Sending the message failed. Either user {person} did not ' + 
+                                        f'consent to get messages, or your message is formatted incorrectly.'+
+                                        ' Please use `<user_id> <message>` as your formatting.')
+
+
+            
 
         elif message.channel.id == 515333729812742155:
             await message.add_reaction("<:pandaLove:649484391801815050>")
@@ -147,7 +190,7 @@ class CustomClient(discord.Client):
         
         #check if text has prime
         potential_primes = re.findall(r"\d+", message.content)
-        if (len(potential_primes) != 0 and any(is_prime(int(potential_primes)) for potential_prime in potential_primes)):
+        if (len(potential_primes) != 0 and any(is_prime(int(potential_prime)) for potential_prime in potential_primes)):
             await message.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER P}")
             await message.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER R}")
             await message.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER I}")
@@ -206,22 +249,6 @@ class CustomClient(discord.Client):
         else:
             await message.channel.send("Hey {}, it's been {} minutes. Did you make progress on {}?".format(message.author.mention, mins, task))
 
-    async def get_messages(self):
-        server = self.server_map['WV']
-        channel = server.get_channel(514951629817118732)
-        counter = 0
-        user_messages = {}
-        async for message in channel.history(limit=100000):
-            user_messages.setdefault(message.author.mention, []).append(message.content)
-        
-        with open('messages.txt', 'w') as f:
-            for k, v in user_messages.items():
-                f.write('{}: {}\n\n\n'.format(k, '\n'.join(v)))
-
 
 client = CustomClient()
-# every 4 hours get messages
-""" @aiocron.crontab('0 */24 * * *')
-async def get_messages():
-    await client.get_messages() """
 client.run(TOKEN)
