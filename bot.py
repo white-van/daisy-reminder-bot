@@ -103,6 +103,9 @@ class CustomClient(discord.Client):
                     await message.add_reaction("<:pandaLove:649484391801815050>")
             
             elif ANON_COMPLIMENT:
+                if message.content.startswith('!ban') and message.author.id == 414980016435232778:
+                    await self._ban_user(message)
+                    return
                 if message.content.startswith('!reply'):
                     await self._send_comp_reply(message)
                     return
@@ -136,11 +139,19 @@ class CustomClient(discord.Client):
         else:
             await self._misc(message)
 
+    
+    async def _ban_user(self, message):
+        user = message.content.replace('!ban', '').strip()
+        banned.append(user)
+        with open('banned_names.txt', 'a') as f:
+            f.write(f'{user}\n')
+            await message.channel.send('Donezo, Blossom.')
+    
     async def _send_comp_reply(self, message):
         if str(message.author.id) in banned:
             await message.channel.send('You\'ve been banned from using this service.')
             return
-            
+
         # find last person who messaged this person
         user_id = message.author.id
         content = ' '.join(message.content.split(' ')[1:])
