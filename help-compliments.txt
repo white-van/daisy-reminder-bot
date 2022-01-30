@@ -1,0 +1,9 @@
+Hello! I am Daisy :)
+
+I am always listening to you... hehe
+
+Here's how I can help you:
+
+1) `<username> <message>`: send someone a compliment and make their day. A username can look like `WVAnon#4913` - though... don't send him a compliment, hehe. (I'll do that ;))
+
+2) `!reply <num> <message>`: reply to a compliment you got. The compliment number is at the bottom of the embed.

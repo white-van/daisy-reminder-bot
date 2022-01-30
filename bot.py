@@ -57,6 +57,10 @@ if ANON_COMPLIMENT:
         banned = []
         for line in f:
             banned.append(line.strip())
+    
+    with open('comp_log.txt') as f:
+        num_compliments = len(f.readlines())
+
 people_phrases = {}
 
 with open('people-phrases.env') as f:
@@ -103,6 +107,9 @@ class CustomClient(discord.Client):
                     await message.add_reaction("<:pandaLove:649484391801815050>")
             
             elif ANON_COMPLIMENT:
+                if message.content.startswith('!help'):
+                    await self._help_compliments(message)
+                    return
                 if message.content.startswith('!add') and message.author.id == 414980016435232778:
                     await self._add_user(message)
                     return
@@ -142,6 +149,16 @@ class CustomClient(discord.Client):
         else:
             await self._misc(message)
 
+    async def _help_compliments(self, message):
+        help_command = open('help-compliments.txt').read()
+        embed = discord.Embed(
+            title="Daisy Help Centre",
+            colour=discord.Colour(0xEB3D34),
+            description=help_command,
+            author="Blossom the Bully"
+        )
+        await message.channel.send(embed=embed)
+
     async def _add_user(self, message):
         user = message.content.replace('!add', '').strip()
         name, user_id = user.split(',')
@@ -165,15 +182,18 @@ class CustomClient(discord.Client):
 
         # find last person who messaged this person
         user_id = message.author.id
-        content = ' '.join(message.content.split(' ')[1:])
+        content = ' '.join(message.content.split(' ')[2:])
+        num = message.content.split(' ')[1]
         reply_id = None
         with open('comp_log.txt') as f:
             for line in f:
                 line = line.strip().split(',')
-                if int(line[0]) == user_id:
-                    reply_id = int(line[1])
+                # find reply num in messages sent to person
+                if int(line[1]) == user_id and line[0] == num:
+                    reply_id = int(line[2])
         if reply_id is None:
-            await message.channel.send('Sorry, I couldn\'t find who sent the message to you.')
+            await message.channel.send('Sorry, I couldn\'t find who sent the message to you.\n\n'+
+                                       'Use !help to check the formatting syntax!')
         else:
             person = self.get_user(reply_id)
             if not person:
@@ -182,11 +202,18 @@ class CustomClient(discord.Client):
                 except:
                     print(f'Couldn\'t find {person}')
                     return
-            await person.send(content)
+            embed = discord.Embed(
+            title=f"{message.author.name} 🌸",
+            colour=discord.Colour(0xEB3D34),
+            description=content,
+            author=f'Anon. Mystery'
+        )
+            await person.send(embed=embed)
             await message.add_reaction("<:pandaLove:649484391801815050>")
         
 
     async def _send_compliment(self, message):
+        global num_compliments
         if str(message.author.id) in banned:
             await message.channel.send('You\'ve been banned from using this service.')
             return
@@ -205,18 +232,24 @@ class CustomClient(discord.Client):
                 except:
                     print(f'Couldn\'t find {person}')
                     return
-            await partner.send(' '.join(message_lst[1:]))
+            embed = discord.Embed(
+            title="Anon. Complimenter 🌸",
+            colour=discord.Colour(0xEB3D34),
+            description=' '.join(message_lst[1:]) + f'\n\n#{num_compliments}',
+            author=f'Anon. Mystery'
+        )
+            await partner.send(embed=embed)
             await message.add_reaction("<:pandaLove:649484391801815050>")
             with open('comp_log.txt', 'a') as f:
-                f.write(f'{partner.id},{message.author.id}\n')
+                f.write(f'{num_compliments},{partner.id},{message.author.id}\n')
+                num_compliments += 1
 
 
 
         else:
             await message.channel.send(f'Sending the message failed. Either user {person} did not ' + 
                                 f'consent to get messages, or your message is formatted incorrectly.'+
-                                ' Please use `<user_id> <message>` as your formatting.\n\n' +
-                                'To reply to the last DM use `!reply <message>`.')
+                                'Use !help to check the formatting syntax!')
     
     async def _dialog_response(self, message):
         text_to_be_analyzed = message.content
