@@ -14,6 +14,10 @@ import dialogflow
 from google.api_core.exceptions import InvalidArgument
 
 
+
+PEN_PALS = False
+ANON_COMPLIMENT = True
+
 load_dotenv()
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = 'private.json'
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -29,12 +33,34 @@ with open('knock-knock.txt') as f:
 with open('help-commands.txt') as f:
     help_command = f.read()
 
-with open('pairs.txt') as f:
-    pairs = {}
-    for line in f:
-        line = line.split(', ')
-        pairs[int(line[0])] = int(line[1])
-        pairs[int(line[1])] = int(line[0])
+
+if PEN_PALS:
+    with open('pairs.txt') as f:
+        pairs = {}
+        for line in f:
+            line = line.split(',')[:2]
+            line = [int(x) for x in line]
+            if(len(line) > 4):
+                for i in range(3):
+                    pairs[int(line[i])] = line[:i] + line[i + 1:4]
+            else:
+                pairs[line[0]] = line[1]
+                pairs[line[1]] = line[0]
+
+if ANON_COMPLIMENT:
+    with open('names.txt') as f:
+        people = {}
+        for line in f:
+            line = line.split(',')
+            people[line[0]] = line[1]
+    
+    with open('banned_names.txt') as f:
+        banned = []
+        for line in f:
+            banned.append(line.strip())
+    
+    with open('comp_log.txt') as f:
+        num_compliments = len(f.readlines())
 
 people_phrases = {}
 
@@ -46,9 +72,11 @@ with open('people-phrases.env') as f:
 cooldown = 3
 
 def is_prime(n):
-    if (n % 2 == 0 and n > 2) or n > int(PRIME_NUMBER_CAP):
+    if (n % 2 == 0 and n > 2) or n > int(PRIME_NUMBER_CAP): 
+
         return False
     return all(n % i for i in range(3, int(math.sqrt(n)) + 1, 2))
+
 class CustomClient(discord.Client):
 
     async def on_ready(self):
@@ -63,21 +91,42 @@ class CustomClient(discord.Client):
 
     async def on_message(self, message):
 
+        if message.author.bot:
+            return 
+
         if isinstance(message.channel, discord.channel.DMChannel):
-            partner_id = pairs.get(message.author.id, None)
-            if partner_id:
-                partner = self.get_user(partner_id)
-                if not partner:
-                    try:
-                        partner = await self.fetch_user(partner_id)
-                    except:
-                        return
-                await partner.send(message.content)
-                await message.add_reaction("<:pandaLove:649484391801815050>")
+            if PEN_PALS:
+                partner_id = pairs.get(message.author.id, None)
+                if partner_id:
+                    partner = self.get_user(partner_id)
+                    if not partner:
+                        try:
+                            partner = await self.fetch_user(partner_id)
+                        except:
+                            return
+                    await partner.send(message.content)
+                    await message.add_reaction("<:pandaLove:649484391801815050>")
+            
+            elif ANON_COMPLIMENT:
+                if message.content.startswith('!help'):
+                    await self._help_compliments(message)
+                    return
+                if message.content.startswith('!add') and message.author.id == 414980016435232778:
+                    await self._add_user(message)
+                    return
+                if message.content.startswith('!ban') and message.author.id == 414980016435232778:
+                    await self._ban_user(message)
+                    return
+                if message.content.startswith('!reply'):
+                    await self._send_comp_reply(message)
+                    return
+                await self._send_compliment(message)
+
+
+            
 
         elif message.channel.id == 515333729812742155:
             await message.add_reaction("<:pandaLove:649484391801815050>")
-
 
         elif message.author.bot:
             return
@@ -103,6 +152,108 @@ class CustomClient(discord.Client):
         else:
             await self._misc(message)
 
+    async def _help_compliments(self, message):
+        help_command = open('help-compliments.txt').read()
+        embed = discord.Embed(
+            title="Daisy Help Centre",
+            colour=discord.Colour(0xEB3D34),
+            description=help_command,
+            author="Blossom the Bully"
+        )
+        await message.channel.send(embed=embed)
+
+    async def _add_user(self, message):
+        user = message.content.replace('!add', '').strip()
+        name, user_id = user.split(',')
+        people[name] = user_id
+        with open('names.txt', 'a') as f:
+            f.write(f'{name},{user_id}\n')
+            await message.channel.send('Added, Blossom.')    
+
+
+    async def _ban_user(self, message):
+        user = message.content.replace('!ban', '').strip()
+        banned.append(user)
+        with open('banned_names.txt', 'a') as f:
+            f.write(f'{user}\n')
+            await message.channel.send('Donezo, Blossom.')
+    
+    async def _send_comp_reply(self, message):
+        if str(message.author.id) in banned:
+            await message.channel.send('You\'ve been banned from using this service.')
+            return
+
+        # find last person who messaged this person
+        user_id = message.author.id
+        content = ' '.join(message.content.split(' ')[2:])
+        num = message.content.split(' ')[1]
+        reply_id = None
+        with open('comp_log.txt') as f:
+            for line in f:
+                line = line.strip().split(',')
+                # find reply num in messages sent to person
+                if int(line[1]) == user_id and line[0] == num:
+                    reply_id = int(line[2])
+        if reply_id is None:
+            await message.channel.send('Sorry, I couldn\'t find who sent the message to you.\n\n'+
+                                       'Use !help to check the formatting syntax!')
+        else:
+            person = self.get_user(reply_id)
+            if not person:
+                try:
+                    person = await self.fetch_user(reply_id)
+                except:
+                    print(f'Couldn\'t find {person}')
+                    return
+            embed = discord.Embed(
+            title=f"{message.author.name} 🌸",
+            colour=discord.Colour(0xEB3D34),
+            description=content,
+            author=f'Anon. Mystery'
+        )
+            await person.send(embed=embed)
+            await message.add_reaction("<:pandaLove:649484391801815050>")
+        
+
+    async def _send_compliment(self, message):
+        global num_compliments
+        if str(message.author.id) in banned:
+            await message.channel.send('You\'ve been banned from using this service.')
+            return
+
+        message_lst = message.content.split(' ')
+        if len(message_lst) <= 1:
+            print(f'Unable to send message')
+            return
+        person = message_lst[0]
+        person_id = people.get(person, None)
+        if person_id:
+            partner = self.get_user(person_id)
+            if not partner:
+                try:
+                    partner = await self.fetch_user(person_id)
+                except:
+                    print(f'Couldn\'t find {person}')
+                    return
+            embed = discord.Embed(
+            title="Anon. Complimenter 🌸",
+            colour=discord.Colour(0xEB3D34),
+            description=' '.join(message_lst[1:]) + f'\n\n#{num_compliments}',
+            author=f'Anon. Mystery'
+        )
+            await partner.send(embed=embed)
+            await message.add_reaction("<:pandaLove:649484391801815050>")
+            with open('comp_log.txt', 'a') as f:
+                f.write(f'{num_compliments},{partner.id},{message.author.id}\n')
+                num_compliments += 1
+
+
+
+        else:
+            await message.channel.send(f'Sending the message failed. Either user {person} did not ' + 
+                                f'consent to get messages, or your message is formatted incorrectly.'+
+                                'Use !help to check the formatting syntax!')
+    
     async def _dialog_response(self, message):
         text_to_be_analyzed = message.content
         session_client = dialogflow.SessionsClient()
@@ -147,7 +298,7 @@ class CustomClient(discord.Client):
 
         #check if text has prime
         potential_primes = re.findall(r"\d+", message.content)
-        if (len(potential_primes) != 0 and any(is_prime(int(potential_primes)) for potential_prime in potential_primes)):
+        if (len(potential_primes) != 0 and any(is_prime(int(potential_prime)) for potential_prime in potential_primes)):
             await message.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER P}")
             await message.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER R}")
             await message.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER I}")
@@ -238,9 +389,4 @@ class CustomClient(discord.Client):
 
 
 client = CustomClient()
-# every 4 hours get messages
-""" @aiocron.crontab('0 */24 * * *')
-async def get_messages():
-    await client.get_messages() """
 client.run(TOKEN)
-
