@@ -4,18 +4,20 @@ I am always listening to you... hehe
 
 Here's how I can help you:
 
-1) **Reminders**: Set a reminder with `*task {minutes} {task description}`. I will check up on you in that many minutes. 
+1) **Reminders**: Set a reminder with either
+- `*task {hours}h{minutes}min {task description}`, or
+- `*task {minutes} {task description}`.
+I will check up on you in that many minutes.
 
 If you finish the task, react to your message with :white_check_mark: I will say good job because I am proud!
 
-If you can't finish it, or don't want me to say good job... 😢 just react with :negative_squared_cross_mark: 
+If you can't finish it, or don't want me to say good job... 😢 just react with :negative_squared_cross_mark:
 
 
-2) **Jokes**: Ask me a knock knock joke with `*knock`. After I say "knock knock", 
+2) **Jokes**: Ask me a knock knock joke with `*knock`. After I say "knock knock",
 say `*who's there`?. Then when I tell you the <name>, respond with `*<name> who?`
 
 
 3) **Clean**: Ah.... I tidy up my own mess too... Just ask me to `*clean` and I'll clean up to 30 of my messages up
 
-4) **Talk**: Use `*talk` to talk to me. I'm still being trained to talk well, but I can have some small talk, 
-and tell you jokes
+4) **Talk**: Use `*talk` to talk to me. I'm still being trained to talk well, but I can have some small talk, and tell you jokes
